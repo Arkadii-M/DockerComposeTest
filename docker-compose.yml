@@ -1,0 +1,41 @@
+version: '3.4'
+
+
+networks:
+  backend_net:
+    ipam:
+      config:
+        - subnet: 192.168.0.0/24
+
+
+services:
+  dockercomposetest:
+    image: ${DOCKER_REGISTRY-}dockercomposetest
+    ports:
+      - "8080:80"
+    networks:
+      backend_net:
+        ipv4_address: 192.168.0.2
+    build:
+      context: .
+      dockerfile: DockerComposeTest/Dockerfile
+
+    healthcheck:
+      test: curl --fail http://localhost:80/healthcheck || exit 1
+      interval: 30s
+      retries: 3
+      start_period: 1m
+  
+
+  somedependentservice:
+    image: ${DOCKER_REGISTRY-}somedependentservice
+    networks:
+      backend_net:
+        ipv4_address: 192.168.0.3
+    build:
+      context: .
+      dockerfile: SomeDependentService/Dockerfile
+    depends_on:
+      dockercomposetest:
+        condition: service_healthy
+
